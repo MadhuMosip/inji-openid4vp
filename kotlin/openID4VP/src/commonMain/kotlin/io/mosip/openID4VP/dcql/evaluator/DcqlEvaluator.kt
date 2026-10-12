@@ -253,7 +253,7 @@ internal class DcqlEvaluator {
                 continue
             }
 
-            if (claimQuery.values != null && !matchesExpectedValues(resolved, claimQuery.values)) {
+            if (claimQuery.values != null && !matchesExpectedValues(resolved, claimQuery.values, pathHasWildcard = claimQuery.path.any { it == null })) {
                 failedClaims.add(
                     ClaimFailure(
                         claimQuery,
@@ -269,11 +269,10 @@ internal class DcqlEvaluator {
         return CheckClaimsResult(matchingClaims, failedClaims)
     }
 
-    private fun matchesExpectedValues(claimValue: Any, expectedValues: List<ClaimValue>): Boolean {
-        val selectedValues: List<Any> = when (claimValue) {
-            is List<*> -> claimValue.filterNotNull()
-            else -> listOf(claimValue)
-        }
+    private fun matchesExpectedValues(claimValue: Any, expectedValues: List<ClaimValue>, pathHasWildcard: Boolean): Boolean {
+        val selectedValues: List<Any> =
+            if (pathHasWildcard && claimValue is List<*>) claimValue.filterNotNull()
+            else listOf(claimValue)
         if (selectedValues.isEmpty()) return false
 
         return selectedValues.any { selectedValue ->

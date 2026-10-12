@@ -425,6 +425,84 @@ class DcqlEvaluatorTest {
     }
 
     @Test
+    fun `does not match an array claim as a whole against a scalar expected value`() {
+        val query = singleQuery(
+            claims = listOf(
+                ClaimsQuery(
+                    path = listOf("nationalities"),
+                    values = listOf(ClaimValue.StringValue("DE"))
+                )
+            )
+        )
+
+        val result = evaluator.evaluate(
+            query,
+            listOf(sdJwt("sdjwt-1", mapOf("nationalities" to listOf("DE", "FR"))))
+        )
+
+        assertFalse(result.success)
+        assertEquals(
+            DCQLEvaluationErrorCodes.CLAIM_VALUE_MISMATCH.value,
+            result.queryMatches.getValue("employee-card").failedClaims?.single()?.reason
+        )
+    }
+
+    @Test
+    fun `matches any array element when path ends with null and values are present`() {
+        val query = singleQuery(
+            claims = listOf(
+                ClaimsQuery(
+                    path = listOf("nationalities", null),
+                    values = listOf(ClaimValue.StringValue("DE"))
+                )
+            )
+        )
+
+        val result = evaluator.evaluate(
+            query,
+            listOf(sdJwt("sdjwt-1", mapOf("nationalities" to listOf("DE", "FR"))))
+        )
+
+        assertTrue(result.success)
+    }
+
+    @Test
+    fun `matches nested null-path selected values against expected values`() {
+        val query = singleQuery(
+            claims = listOf(
+                ClaimsQuery(
+                    path = listOf("degrees", null, "subjects", null, "name"),
+                    values = listOf(ClaimValue.StringValue("Physics"))
+                )
+            )
+        )
+
+        val result = evaluator.evaluate(
+            query,
+            listOf(
+                sdJwt(
+                    "sdjwt-1",
+                    mapOf(
+                        "degrees" to listOf(
+                            mapOf(
+                                "subjects" to listOf(
+                                    mapOf("name" to "Math"),
+                                    mapOf("name" to "Physics")
+                                )
+                            ),
+                            mapOf(
+                                "subjects" to listOf(mapOf("name" to "Chemistry"))
+                            )
+                        )
+                    )
+                )
+            )
+        )
+
+        assertTrue(result.success)
+    }
+
+    @Test
     fun `reports claim_value_not_matching when no expected value matches`() {
         val query = singleQuery(
             claims = listOf(
