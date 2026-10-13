@@ -163,7 +163,6 @@ internal fun convertToProcessedCredentials(
     return processedCredentials
 }
 
-@Suppress("UNCHECKED_CAST")
 internal fun resolveClaimsPathPointer(path: List<Any?>, claims: Any?): Any? {
     var selection: List<Any?> = listOf(claims)
     var pathHasWildcard = false
